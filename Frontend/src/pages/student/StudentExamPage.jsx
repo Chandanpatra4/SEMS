@@ -31,8 +31,8 @@ function StudentExamPage() {
   const currentQuestion = questions[currentIndex]
 
   const logProctoringEvent = useCallback(
-    async (activityType) => {
-      if (!exam?._id || hasSubmittedRef.current) {
+    async (activityType, { force = false } = {}) => {
+      if (!exam?._id || (!force && hasSubmittedRef.current)) {
         return
       }
 
@@ -116,7 +116,6 @@ function StudentExamPage() {
       }
 
       isSubmittingRef.current = true
-      hasSubmittedRef.current = true
       setIsSubmitting(true)
       setError('')
 
@@ -131,9 +130,11 @@ function StudentExamPage() {
         submitReason === 'no_face_auto_submit' || submitReason === 'multiple_face_auto_submit'
 
       try {
-        if (submitReason === 'no_face_auto_submit' || submitReason === 'multiple_face_auto_submit') {
-          await logProctoringEvent(submitReason)
+        if (submitReason !== 'manual_submit') {
+          await logProctoringEvent(submitReason, { force: true })
         }
+
+        hasSubmittedRef.current = true
 
         await submitExam({
           examId: exam._id,
@@ -181,7 +182,7 @@ function StudentExamPage() {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerId)
-          handleSubmit(true)
+          handleSubmit(true, 'time_expired_auto_submit')
           return 0
         }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getActivityLogs } from '../../services/activityService'
 
 function AdminActivityLogsPage() {
@@ -6,29 +6,49 @@ function AdminActivityLogsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    const loadLogs = async () => {
-      setIsLoading(true)
-      setError('')
+  const loadLogs = useCallback(async () => {
+    setIsLoading(true)
+    setError('')
 
-      try {
-        const data = await getActivityLogs()
-        setLogs(data)
-      } catch (apiError) {
-        setError(apiError.message)
-      } finally {
-        setIsLoading(false)
-      }
+    try {
+      const data = await getActivityLogs()
+      const sortedLogs = [...data].sort((first, second) => {
+        const firstTime = new Date(first?.timestamp || first?.createdAt || 0).getTime()
+        const secondTime = new Date(second?.timestamp || second?.createdAt || 0).getTime()
+        return secondTime - firstTime
+      })
+      setLogs(sortedLogs)
+    } catch (apiError) {
+      setError(apiError.message)
+    } finally {
+      setIsLoading(false)
     }
-
-    loadLogs()
   }, [])
+
+  useEffect(() => {
+    loadLogs()
+
+    const intervalId = window.setInterval(() => {
+      loadLogs()
+    }, 10000)
+
+    return () => window.clearInterval(intervalId)
+  }, [loadLogs])
 
   return (
     <section className="space-y-5">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-[#1E3A8A]">Activity Logs</h1>
-        <p className="text-sm text-slate-500">System proctoring and student activity events</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-[#1E3A8A]">Activity Logs</h1>
+          <p className="text-sm text-slate-500">System proctoring and student activity events</p>
+        </div>
+        <button
+          type="button"
+          onClick={loadLogs}
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300"
+        >
+          Refresh
+        </button>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">

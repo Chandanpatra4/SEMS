@@ -3,10 +3,14 @@ import ActivityLog from '../models/ActivityLog.js';
 
 const severityMap = {
   tab_switch: 'medium',
+  tab_switch_auto_submit: 'high',
   fullscreen_exit: 'high',
   copy_attempt: 'high',
   right_click: 'medium',
   focus_loss: 'low',
+  no_face_auto_submit: 'high',
+  multiple_face_auto_submit: 'high',
+  time_expired_auto_submit: 'low',
 };
 
 const logActivity = async (req, res) => {
@@ -65,8 +69,8 @@ const getActivityLogs = async (req, res) => {
     const activityLogs = await ActivityLog.find(query)
       .populate('studentId', 'name email')
       .populate('examId', 'title subject branch year')
-      .sort({ timestamp: -1 })
-      .limit(50);
+      .sort({ createdAt: -1, timestamp: -1 })
+      .limit(200);
 
     return res.status(200).json({
       success: true,
